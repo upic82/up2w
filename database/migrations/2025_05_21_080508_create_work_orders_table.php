@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('work_orders', function (Blueprint $table) {
             $table->id();
-            $table->string('no_amp')->unique(); // relasi one-to-one, harus unik
+            $table->unsignedBigInteger('no_amp')->unique(); // relasi one-to-one, harus unik
             $table->string('no_wo');
             $table->string('kategori')->nullable();
             $table->text('technical_requirment')->nullable();
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign key opsional jika kamu ingin validasi no_amp di DB level
-            $table->foreign('no_amp')->references('no_amp')->on('penugasans')->onDelete('cascade');
+            $table->foreign('no_amp')->references('no_amp')->on('penugasan')->onDelete('cascade');
         });
     }
 

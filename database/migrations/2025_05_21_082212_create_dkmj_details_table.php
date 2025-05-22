@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('dkmj_detail', function (Blueprint $table) {
-            $table->integer('ID')->primary();
-            $table->unsignedInteger('no_dkmj');
-            $table->unsignedInteger('no_material');
+            $table->id();
+            $table->unsignedBigInteger('no_dkmj');
+            $table->unsignedBigInteger('no_material');
             $table->string('satuan', 20)->nullable();
             $table->integer('qty')->nullable();
             $table->string('spesifikasi', 255)->nullable();

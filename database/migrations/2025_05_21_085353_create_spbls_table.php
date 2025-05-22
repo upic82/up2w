@@ -29,7 +29,7 @@ return new class extends Migration
 
             // Foreign key constraint (opsional, jika ada tabel dkmj dan vendor)
             $table->foreign('no_dkmj')->references('id')->on('dkmj')->onDelete('cascade');
-            $table->foreign('no_vendor')->references('id')->on('vendors')->onDelete('cascade');
+            $table->foreign('no_vendor')->references('id')->on('vendor')->onDelete('cascade');
         });
     }
 

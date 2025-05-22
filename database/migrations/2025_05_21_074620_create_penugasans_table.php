@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('penugasan', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('no_amp');
+            $table->unsignedBigInteger('no_amp')->unique();
             $table->string('nama_penugasan');
             $table->string('no_surat_penugasan')->nullable();
             $table->date('tanggal_penugasan')->nullable();

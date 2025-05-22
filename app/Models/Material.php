@@ -13,6 +13,7 @@ class Material extends Model
     protected $fillable = [
         'nama_material',
         'satuan',
+        'jenis',
         'created_by',
         'udpated_by',
     ];

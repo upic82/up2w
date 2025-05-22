@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->id(); // Kolom ID primary key otomatis
             $table->string('nama_material');
             $table->string('satuan');
+            $table->string('jenis'); // Material atau Jasa
             $table->string('created_by')->nullable();
             $table->string('update_by')->nullable();
             $table->timestamps(); // Tambahkan created_at dan updated_at otomatis
