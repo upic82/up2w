@@ -2,17 +2,18 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\MaterialResource\Pages;
-use App\Filament\Resources\MaterialResource\RelationManagers;
-use App\Models\Material;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Material;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Resources\Resource;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\MaterialResource\Pages;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\MaterialResource\RelationManagers;
 
 class MaterialResource extends Resource
 {
@@ -33,7 +34,7 @@ class MaterialResource extends Resource
         ->schema([
 
             //card
-            Forms\Components\Card::make()
+            Forms\Components\Section::make()
             ->schema([
 
                 
@@ -51,19 +52,32 @@ class MaterialResource extends Resource
                         'Material' => 'Material',
                         'Jasa' => 'Jasa',
                     ]),
+                TextInput::make('created_by')
+                    ->disabled()
+                    ->dehydrated()
+                    ->default(auth()->user()->name),
+                TextInput::make('updated_by')
+                    ->disabled()
+                    ->dehydrated()
+                    ->default(auth()->user()->name)
+                    ->visible(fn ($operation) => $operation === 'edit'),
 
             ])
 
         ]);
     }
-
+    
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('nama_material')->searchable(),
                 Tables\Columns\TextColumn::make('satuan')->searchable(),
-                Tables\Columns\TextColumn::make('jenis')->searchable(),
+                Tables\Columns\TextColumn::make('jenis')->searchable()->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Material' => 'warning',
+                        'Jasa' => 'success',
+                    }),
             ])
             ->filters([
                 //
