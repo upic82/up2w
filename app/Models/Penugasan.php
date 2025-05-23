@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Penugasan extends Model
 {
     protected $table = 'penugasan';
-
+    protected $foreignKey = 'id_customer';
     protected $fillable = [
         'no_amp',
         'nama_penugasan',
@@ -19,7 +20,7 @@ class Penugasan extends Model
         'pic_ren',
         'pic_mek',
         'status_penugasan',
-        'customer',
+        'id_customer',
         'status_progress',
         'created_by',
         'updated_by',
@@ -28,7 +29,10 @@ class Penugasan extends Model
     // Relasi ke Customer
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'customer');
+        return $this->belongsTo(Customer::class, 
+            'id_customer', // Kolom FK di tabel penugasan
+            'id'        // Kolom PK di tabel customer
+        );
     }
 
     public function workOrder()
