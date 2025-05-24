@@ -33,7 +33,7 @@ class WorkOrder extends Model
     // Relasi ke Penugasan
     public function penugasan()
     {
-        return $this->belongsTo(Penugasan::class, 'no_amp', 'no_amp');
+        return $this->belongsTo(Penugasan::class, 'no_amp', 'id');
     }
     public function dkmj()
     {

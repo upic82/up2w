@@ -39,5 +39,8 @@ class Penugasan extends Model
     {
         return $this->hasOne(WorkOrder::class, 'no_amp', 'no_amp');
     }
-
+    public function scopeActive($query)
+    {
+        return $query->whereIn('status_progress', ['Not Started', 'On Progress']);
+    }
 }
