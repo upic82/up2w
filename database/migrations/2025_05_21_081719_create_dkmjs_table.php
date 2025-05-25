@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('dkmj', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('no_amp');
+            $table->string('no_dkmj', 100)->nullable();
             $table->string('disusun_oleh', 100)->nullable();
             $table->string('menyetujui', 100)->nullable();
             $table->string('tanggal_dkmj', 20)->nullable();
@@ -22,7 +23,7 @@ return new class extends Migration
             $table->string('no_wbs', 50)->nullable();
             $table->string('created_by', 50)->nullable();
             $table->string('updated_by', 50)->nullable();
-
+            $table->timestamps();
             $table->foreign('no_amp')->references('no_amp')->on('work_orders')->onDelete('cascade');
         });
     }

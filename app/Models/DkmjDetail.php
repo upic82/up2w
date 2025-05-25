@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DkmjDetail extends Model
 {
+    protected $table = 'dkmj_detail'; // Tetap gunakan nama tabel yang ada
     protected $fillable = [
         'ID',
         'no_dkmj',

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('satuan', 20)->nullable();
             $table->integer('qty')->nullable();
             $table->string('spesifikasi', 255)->nullable();
-
+            $table->timestamps();
             // Foreign key ke tabel dkmj
             $table->foreign('no_dkmj')->references('ID')->on('dkmj')->onDelete('cascade');
 

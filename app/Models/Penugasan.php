@@ -43,4 +43,15 @@ class Penugasan extends Model
     {
         return $query->whereIn('status_progress', ['Not Started', 'On Progress']);
     }
+    
+    // app/Models/Penugasan.php
+    public function scopeHasWorkOrder($query)
+    {
+        return $query->whereHas('workOrders');
+    }
+
+    public function workOrders()
+    {
+        return $this->hasMany(WorkOrder::class, 'no_amp', 'id');
+    }
 }
