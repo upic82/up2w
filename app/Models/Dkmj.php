@@ -16,6 +16,7 @@ class Dkmj extends Model
     protected $fillable = [
         'no_amp',
         'no_dkmj',
+        'status',
         'disusun_oleh',
         'menyetujui',
         'tanggal_dkmj',

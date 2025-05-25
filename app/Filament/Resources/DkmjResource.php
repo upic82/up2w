@@ -18,11 +18,13 @@ use Filament\Forms\Components\Repeater;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\RichEditor;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\DkmjResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\DkmjResource\RelationManagers;
-use Filament\Forms\Components\RichEditor;
+use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
+use Filament\Forms\Components\Actions\Action; // Import class Action
 
 class DkmjResource extends Resource
 {
@@ -64,6 +66,23 @@ class DkmjResource extends Resource
                                         $set('tanggal_penugasan', $penugasan->tanggal_penugasan);
                                         $set('batas_waktu', $penugasan->batas_waktu_penugasan);
                                         $set('nomor_wbs', $penugasan->no_wbs);
+                                    })
+                                    ->afterStateHydrated(function ($state, $set) {
+                                        // Ini akan dijalankan saat load form edit
+                                        if ($state) {
+                                            $penugasan = Penugasan::find($state);
+                                            if ($penugasan) {
+                                                $set('nilai_penugasan', 
+                                                    $penugasan->nilai_penugasan 
+                                                        ? 'Rp ' . number_format($penugasan->nilai_penugasan, 0, ',', '.')
+                                                        : '-'
+                                                );
+                                                $set('amp_id', $penugasan->no_amp);
+                                                $set('tanggal_penugasan', $penugasan->tanggal_penugasan);
+                                                $set('batas_waktu', $penugasan->batas_waktu_penugasan);
+                                                $set('nomor_wbs', $penugasan->no_wbs);
+                                            }
+                                        }
                                     })
                                     ->loadingMessage('Memuat penugasan...')
                                     ->searchDebounce(500)
@@ -110,8 +129,8 @@ class DkmjResource extends Resource
                             //====================DKMJ Item===================================
                             Section::make('DKMJ Item')
                                 ->schema([
-                                    Repeater::make('details')
-                                        ->relationship()
+                                    TableRepeater::make('details')
+                                        ->relationship('details')
                                         ->schema([
                                             Select::make('no_material')
                                                 ->label('Pilih Material/Jasa')
@@ -120,13 +139,15 @@ class DkmjResource extends Resource
                                                 ->required()
                                                 ->searchable(),
                                             TextInput::make('spesifikasi'),
-                                            
                                             TextInput::make('qty')
                                                 ->numeric()
                                                 ->required()
                                                 ->minValue(1)
                                         ])
-                                        ->columns(3)
+                                        ->reorderable()
+                                        ->cloneable()
+                                        ->collapsible()
+                                        ->columnSpan('full'),
                                 ])
                     
                         ])
@@ -137,14 +158,38 @@ class DkmjResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('no_dkmj'),
+                TextColumn::make('no_dkmj')->label('No DKMJ')->searchable()->sortable(),
                 TextColumn::make('penugasan.nama_penugasan')
-            ])
+                    ->searchable()
+                    ->limit(75) // Potong teks setelah 50 karakter
+                    ->tooltip(function (TextColumn $column): ?string {
+                        $state = $column->getState();
+                        return strlen($state) > 75 ? $state : null; // Tampilkan tooltip hanya jika teks dipotong
+                    }),
+                TextColumn::make('tanggal_dkmj')
+                    ->label('Tanggal'),
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Draft' => 'gray',
+                        'Approved' => 'success',
+                        'Review' => 'danger',
+                        default => 'primary',
+                    }),
+                ])
             ->filters([
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(), // Tambahkan ini
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('view_dkmj')
+                    ->label('')
+                    ->tooltip('Cetak DKMJ')
+                    ->icon('heroicon-o-printer')
+                    ->url(fn ($record) => route('dkmj.print', $record))
+                    ->openUrlInNewTab(),
+            
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -165,7 +210,35 @@ class DkmjResource extends Resource
         return [
             'index' => Pages\ListDkmjs::route('/'),
             'create' => Pages\CreateDkmj::route('/create'),
+            'view' => Pages\ViewDkmj::route('/{record}/view'), // Tambahkan ini
             'edit' => Pages\EditDkmj::route('/{record}/edit'),
+            'dkmj' => Pages\Dkmj::route('/{record}/dkmj'),
         ];
+    }
+
+    public static function viewForm(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Section::make('Informasi Utama')
+                    ->schema([
+                        TextInput::make('no_dkmj')->label('No. DKJM')->disabled(),
+                        TextInput::make('penugasan.nama_penugasan')->label('Penugasan')->disabled(),
+                        // ... field lainnya dalam mode baca saja
+                    ])->columns(2),
+                
+                Section::make('Detail Item')
+                    ->schema([
+                        Repeater::make('details')
+                            ->relationship()
+                            ->schema([
+                                TextInput::make('material.nama_material')->disabled(),
+                                TextInput::make('spesifikasi')->disabled(),
+                                TextInput::make('qty')->disabled(),
+                            ])
+                            ->columns(3)
+                            ->disabled()
+                    ])
+            ]);
     }
 }

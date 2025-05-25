@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('no_amp');
             $table->string('no_dkmj', 100)->nullable();
+            $table->string('status', 50)->nullable();//status = draft/review/approved
             $table->string('disusun_oleh', 100)->nullable();
             $table->string('menyetujui', 100)->nullable();
             $table->string('tanggal_dkmj', 20)->nullable();
