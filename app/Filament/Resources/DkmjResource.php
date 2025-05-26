@@ -181,15 +181,28 @@ class DkmjResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(), // Tambahkan ini
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('view_dkmj')
-                    ->label('')
-                    ->tooltip('Cetak DKMJ')
-                    ->icon('heroicon-o-printer')
-                    ->url(fn ($record) => route('dkmj.print', $record))
-                    ->openUrlInNewTab(),
-            
+                \Filament\Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(), // Tambahkan ini
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\Action::make('view_dkmj')
+                        ->label('Print')
+                        ->tooltip('Cetak DKMJ')
+                        ->icon('heroicon-o-printer')
+                        ->url(fn ($record) => route('dkmj.print', $record))
+                        ->openUrlInNewTab(),
+                    Tables\Actions\Action::make('create_spbl')
+                        ->label('Buat SPBL')
+                        ->icon('heroicon-o-document-plus')
+                        ->color('success')
+                        ->url(fn (Dkmj $record): string => route('filament.admin.resources.spbls.create', [
+                            'no_dkmj' => $record->id,
+                        ])),
+                        
+                ])
+                ->label('Aksi')
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->size('sm')
+                ->color('primary'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

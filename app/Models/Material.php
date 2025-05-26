@@ -34,4 +34,9 @@ class Material extends Model
     {
         return $this->hasMany(KontrakDetail::class, 'no_material');
     }
+    // Di app/Models/Material.php
+    public function dkmjDetails()
+    {
+        return $this->hasMany(DkmjDetail::class, 'no_material');
+    }
 }

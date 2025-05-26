@@ -83,8 +83,10 @@ class PenugasanResource extends Resource
                             ->options([
                                 'Not Started' => 'Not Started',
                                 'On Progress' => 'On Progress',
-                                'Completed' => 'Completed',
                                 '100% Done' => '100% Done',
+                                'BAPP' => 'BAPP',
+                                'Completed' => 'Completed',
+                                
                             ]),
                         
 
@@ -122,6 +124,7 @@ class PenugasanResource extends Resource
                         'On Progress' => 'warning',
                         'Completed' => 'info',
                         '100% Done' => 'success',
+                        'BAPP' => 'info',
                     }),
                 TextColumn::make('batas_waktu_penugasan')
                     ->label('Batas Waktu')
@@ -148,8 +151,10 @@ class PenugasanResource extends Resource
                     ->options([
                         'Not Started' => 'Not Started',
                         'On Progress' => 'On Progress',
-                        'Completed' => 'Completed',
                         '100% Done' => '100% Done',
+                        'BAPP' => 'BAPP',
+                        'Completed' => 'Completed',
+                        
                     ])
                     ->multiple()
                     ->default(['Not Started', 'On Progress'])
