@@ -74,4 +74,24 @@ class Dkmj extends Model
     {
         return $this->belongsTo(Penugasan::class, 'no_amp', 'id');
     }   
+    public function spbls()
+    {
+        return $this->hasMany(Spbl::class,'no_dkmj');
+    }
+    // app/Models/Dkmj.php
+    public function calculateRemainingQty($materialId)
+    {
+        $totalUsed = $this->spbls()
+            ->with('details')
+            ->get()
+            ->flatMap->details
+            ->where('no_material', $materialId)
+            ->sum('qty');
+
+        $originalQty = $this->dkmjDetails()
+            ->where('no_material', $materialId)
+            ->value('qty');
+
+        return max(0, $originalQty - $totalUsed);
+    }
 }

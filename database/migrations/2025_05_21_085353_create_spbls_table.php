@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('no_spbl')->unique();
             $table->unsignedBigInteger('no_dkmj'); // foreign key ke dkmj
             $table->date('tanggal_spbl');
+            $table->string('nama_spbl');
+            
             $table->decimal('nilai_spbl', 18, 2);
             $table->decimal('nilai_ppn', 18, 2);
             $table->string('disusun_by');

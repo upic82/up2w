@@ -16,10 +16,12 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\RichEditor;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Forms\Components\Placeholder;
 use App\Filament\Resources\DkmjResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\DkmjResource\RelationManagers;
@@ -80,7 +82,7 @@ class DkmjResource extends Resource
                                                 $set('amp_id', $penugasan->no_amp);
                                                 $set('tanggal_penugasan', $penugasan->tanggal_penugasan);
                                                 $set('batas_waktu', $penugasan->batas_waktu_penugasan);
-                                                $set('nomor_wbs', $penugasan->no_wbs);
+                                                $set('no_wbs', $penugasan->no_wbs);
                                             }
                                         }
                                     })
@@ -90,17 +92,39 @@ class DkmjResource extends Resource
                                     Section::make()
                                         ->Schema([
                                             // Informasi yang akan terisi otomatis
-                                            TextInput::make('nomor_wbs')
-                                                ->label('Nomor WBS'),
-                                            TextInput::make('amp_id')
-                                                ->label('AMP ID'),
-                                            TextInput::make('nilai_penugasan')
-                                                ->label('Nilai Penugasan'),
-                                            TextInput::make('tanggal_penugasan')
-                                                ->label('Tanggal Penugasan'),
+                                            Placeholder::make('no_amp')
+                                            ->content(function ($state) {
+                                                $penugasan = Penugasan::find($state);
+                                                return $penugasan->no_amp ?? '-';
+                                            })
+                                            ->label('No. AMP'),
+                                            Placeholder::make('no_wbs')
+                                            ->content(function ($state) {
+                                                $penugasan = Penugasan::find($state);
+                                                return $penugasan->no_wbs ?? '-';
+                                            })
+                                            ->label('No. WBS'),
+                                            
+                                            Placeholder::make('nilai_penugasan')
+                                            ->content(function ($state) {
+                                                $penugasan = Penugasan::find($state);
+                                                return $penugasan->nilai_penugasan ?? '-';
+                                            })
+                                            ->label('Nilai Penugasan'),
+                                            
+                                            Placeholder::make('tanggal_penugasan')
+                                            ->content(function ($state) {
+                                                $penugasan = Penugasan::find($state);
+                                                return $penugasan->tanggal_penugasan ?? '-';
+                                            })
+                                            ->label('Tanggal Penugasan'),
                                                 
-                                            TextInput::make('batas_waktu')
-                                                ->label('Batas Waktu'),
+                                            Placeholder::make('batas_waktu_penugasan')
+                                            ->content(function ($state) {
+                                                $penugasan = Penugasan::find($state);
+                                                return $penugasan->batas_waktu_penugasan ?? '-';
+                                            })
+                                            ->label('Batas Waktu Penugasan'),
                                     
                                         ])
                                         ->columns(3)
@@ -176,10 +200,14 @@ class DkmjResource extends Resource
                         'Review' => 'danger',
                         default => 'primary',
                     }),
+                ViewColumn::make('expand')
+                    ->label('Daftar SPBL')
+                    ->view('tables.columns.expandable-dkmj-spbl'),
                 ])
             ->filters([
                 //
             ])
+            ->recordUrl(null)
             ->actions([
                 \Filament\Tables\Actions\ActionGroup::make([
                     Tables\Actions\ViewAction::make(), // Tambahkan ini

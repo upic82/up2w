@@ -39,4 +39,5 @@ class Material extends Model
     {
         return $this->hasMany(DkmjDetail::class, 'no_material');
     }
+   
 }
