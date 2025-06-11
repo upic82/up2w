@@ -62,7 +62,7 @@ class EditSpbl extends EditRecord
                 'nilai_spbl' => 'Total SPBL (termasuk PPN) sudah melebihi nilai penugasan.',
             ]);
         }
-
+        logger()->debug('Data setelah konversi:', $data);
         return $data;
     
     }

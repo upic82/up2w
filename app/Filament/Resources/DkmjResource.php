@@ -225,6 +225,13 @@ class DkmjResource extends Resource
                         ->url(fn (Dkmj $record): string => route('filament.admin.resources.spbls.create', [
                             'no_dkmj' => $record->id,
                         ])),
+                    Tables\Actions\Action::make('create_hpe')
+                        ->label('Buat HPE/RAB')
+                        ->icon('heroicon-o-document-plus')
+                        ->color('warning')
+                        ->url(fn (Dkmj $record): string => route('filament.admin.resources.hpes.create', [
+                            'no_dkmj' => $record->id,
+                        ])),
                         
                 ])
                 ->label('Aksi')

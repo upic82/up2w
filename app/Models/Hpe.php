@@ -11,10 +11,12 @@ class Hpe extends Model
 
     protected $fillable = [
         'no_hpe',
+        'nama_hpe',
         'no_dkmj',
         'tanggal_hpe',
         'nilai_hpe',
         'nilai_ppn',
+        'grand_total',
         'disusun_oleh',
         'approved_by',
         'approved_at',

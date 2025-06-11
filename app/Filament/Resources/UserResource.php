@@ -69,6 +69,7 @@ class UserResource extends Resource
                         'User' => 'User',
                         'Admin' => 'Admin',
                     ]),
+                    
             ]);
     }
 

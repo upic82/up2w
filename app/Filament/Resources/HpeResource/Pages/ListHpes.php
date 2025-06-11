@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\SpblResource\Pages;
+namespace App\Filament\Resources\HpeResource\Pages;
 
-use App\Filament\Resources\SpblResource;
+use App\Filament\Resources\HpeResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
-class ListSpbls extends ListRecords
+class ListHpes extends ListRecords
 {
-    protected static string $resource = SpblResource::class;
+    protected static string $resource = HpeResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -17,4 +17,5 @@ class ListSpbls extends ListRecords
                 ->hidden(),
         ];
     }
+    
 }

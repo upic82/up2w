@@ -16,6 +16,7 @@ class Spbl extends Model
         'nama_spbl',
         'nilai_spbl',
         'nilai_ppn',
+        'grand_total',
         'disusun_by',
         'persyaratan_pengadaan',
         'no_vendor',

@@ -2,49 +2,34 @@
 
 namespace App\Filament\Resources;
 
-use id;
+use App\Models\Hpe;
 use Filament\Forms;
 use App\Models\Dkmj;
-use App\Models\Spbl;
 use Filament\Tables;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use App\Models\Material;
 use Filament\Forms\Form;
-use App\Models\DkmjDetail;
 use Filament\Tables\Table;
-use Filament\Support\RawJs;
-//use App\Filament\Resources\DkmjResource\Pages\Dkmj;
 use Illuminate\Support\Str;
-use Illuminate\Support\Number;
 use Filament\Resources\Resource;
-use Illuminate\Support\Facades\DB;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\View;
-use Illuminate\Support\Facades\Log;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Tables\Columns\TextColumn;
-use Illuminate\Database\Eloquent\Model;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\TextInput\Mask;
-use App\Filament\Resources\SpblResource\Pages;
-use Illuminate\Validation\ValidationException;
+use App\Filament\Resources\HpeResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\HpeResource\RelationManagers;
 use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
 
-
-
-class SpblResource extends Resource
+class HpeResource extends Resource
 {
-    protected static ?string $model = Spbl::class;
+    protected static ?string $model = Hpe::class;
 
     protected static ?string $navigationGroup = 'Pengadaan';
-
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
@@ -92,41 +77,33 @@ class SpblResource extends Resource
                             ->label('Nilai Penugasan')
                             ->content(fn ($operation, $record) => 
                                 $operation === 'edit' 
-                                    ? $record->nilai_penugasan ?? $record->dkmj->nilai_penugasan ?? $record->dkmj->penugasan->nilai_penugasan
-                                    : (\App\Models\Dkmj::find(request()->no_dkmj)?->nilai_penugasan 
-                                        ?? \App\Models\Dkmj::find(request()->no_dkmj)?->penugasan?->nilai_penugasan)
+                                    ? number_format($record->nilai_penugasan ?? $record->dkmj->nilai_penugasan ?? $record->dkmj->penugasan->nilai_penugasan, 0, ',', '.')
+                                    : number_format(\App\Models\Dkmj::find(request()->no_dkmj)?->nilai_penugasan 
+                                        ?? \App\Models\Dkmj::find(request()->no_dkmj)?->penugasan?->nilai_penugasan, 0, ',', '.')
                             ),
                     ])
                     ->columns(3),
-                    
-                Forms\Components\Section::make('Informasi SPBL')
+                
+                    Forms\Components\Section::make('Informasi HPE')
                     ->schema([
-                        TextInput::make('no_spbl')
-                            ->label('No. SPBL')
+                        TextInput::make('no_hpe')
+                            ->label('No. HPE')
                             ->required()
-                            ->default('SPBL-' . date('Ymd') . '-' . Str::random(4))
+                            ->default('HPE-' . date('Ymd') . '-' . Str::random(4))
                             ->dehydrated() // WAJIB ada untuk memastikan nilai terkirim
-                            ->unique(table: Spbl::class, column: 'no_spbl', ignoreRecord: true),
+                            ->unique(table: Hpe::class, column: 'no_hpe', ignoreRecord: true),
                             
-                        Forms\Components\DatePicker::make('tanggal_spbl')
-                            ->label('Tanggal SPBL')
+                        Forms\Components\DatePicker::make('tanggal_hpe')
+                            ->label('Tanggal HPE')
                             ->default(now())
                             ->required(),
-                        Forms\Components\TextInput::make('nama_spbl')
-                            ->label('Nama SPBL')
-                            ->required(),   
-                        Forms\Components\Select::make('no_vendor')
-                            ->label('Vendor')
-                            ->relationship('vendor', 'nama_vendor')
-                            ->searchable()
+                        Forms\Components\TextInput::make('nama_hpe')
+                            ->label('Nama HPE')
                             ->required(),
-                            
-                        
                     ])
                     ->columns(2),
-                
 
-                    Section::make('Item SPBL')
+                    Section::make('Item HPE')
                     ->schema([
                         TableRepeater::make('details')
                             ->relationship('details')
@@ -204,8 +181,7 @@ class SpblResource extends Resource
                                         $harga = (float) $get('harga');
                                         $set('subtotal', $qty * $harga);
                                     })
-                            ])
-                            
+                                ])//----akhir details
                             ->columnSpan('full')
                             ->live()
                             ->reactive()
@@ -215,119 +191,52 @@ class SpblResource extends Resource
                                     return ((float) ($item['qty'] ?? 0)) * ((float) ($item['harga'] ?? 0));
                                 });
 
-                                $set('nilai_spbl', $total);
+                                $set('nilai_hpe', $total);
                                 
                                 $set('nilai_ppn',$total * 0.11);
                                 
                                 $set('grand_total',$total * 1.11);
                             }),
-                            
-                        ]),
-                        
-                        TextInput::make('nilai_spbl')
+                        TextInput::make('nilai_hpe')
                             ->numeric()
-                            ->readOnly(),
+                            ->readOnly()
+                            ,
                             
                         TextInput::make('nilai_ppn')
                             ->numeric()
-                            ->readOnly(),
-
+                            ->readOnly()
+                            ,
                         TextInput::make('grand_total')
                             ->label('Grand Total')
-                            ->readOnly()
-                            /*->formatStateUsing(function ($state, $get) {
-                                $qty = (float)($get('qty') ?? 0);
-                                $harga = (float)($get('harga') ?? 0);
-                                return Number::format($qty * $harga, 0);
-                            })
-
-                            //isi grand total waktu load edit
-                            ->afterStateHydrated(function (\Filament\Forms\Set $set, $state, $get) {
-                                // Ambil nilai dari dua field
-                                $nilaiSpbl = (float) $get('nilai_spbl') ?? 0;
-                                $nilaiPpn = (float) $get('nilai_ppn') ?? 0;
-
-                                $grandTotal = $nilaiSpbl + $nilaiPpn;
-
-                                // Format angka
-                                $formatted = number_format($grandTotal, 0, ',', '.');
-
-                                // Set state grand_total
-                                //$set('grand_total', $formatted);
-                                 //$set('nilai_spbl', number_format($nilaiSpbl, 0, ',', '.'));
-                                  //$set('nilai_ppn', number_format($nilaiPpn, 0, ',', '.'));
-                            })
-                            /*->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
-                                $formatted = number_format((float) str_replace(['.', ','], '', $state), 0, ',', '.');
-                                $set('grand_total', $formatted);
-                            })
-
-                            ->afterStateUpdated(function ($state, $set, $get) {
-                                $nilaiHpe = (float)$get('nilai_spbl');
-                                $nilaiPpn = (float)$get('nilai_ppn');
-                                $set('grand_total', $nilaiHpe + $nilaiPpn);
-                            })*/
-                            //->hidden()
+                            ->readonly()
                             ->numeric(),
-                        
-                        
-                        Placeholder::make('sisa_saldo_penugasan')
-                            ->label('Saldo Penugasan Tersisa')
-                            ->content(function ($record, $state, $get) {
-                                $noDkmj = $get('no_dkmj');
-
-                                if (!$noDkmj) return '-';
-
-                                $dkmj = \App\Models\Dkmj::find($noDkmj);
-                                if (!$dkmj || !$dkmj->workOrder || !$dkmj->workOrder->penugasan) return '-';
-
-                                $penugasan = $dkmj->workOrder->penugasan;
-
-                                // Hitung total SPBL sebelumnya
-                                $totalSpbl = 0;
-                                foreach ($dkmj->workOrder->dkmj as $dk) {
-                                    $totalSpbl += $dk->spbls()->sum(DB::raw('nilai_spbl + nilai_ppn'));
-                                }
-
-                                $saldo = $penugasan->nilai_penugasan - $totalSpbl;
-
-                                return 'Rp ' . number_format($saldo, 0, ',', '.');
-                            })
-                            ->extraAttributes(['class' => 'text-right text-red-600 font-semibold'])
-                    ]);
-        }
+                    
+                        ])                
+            ]);
+    }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('no_spbl')
+                TextColumn::make('no_hpe')
                     ->searchable(),
-                TextColumn::make('nama_spbl')
-                    ->searchable(),
+                
                 TextColumn::make('dkmj.penugasan.nama_penugasan')
                     ->searchable(),
                 TextColumn::make('grand_total')
                     ->label('Nilai')
-                  
+                    
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
                 TextColumn::make('no_dkmj')
-                    ->label('No DKMJ')
-                    ->alignCenter()
             ])
             ->filters([
                 //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('view_spbl')
-                        ->label('Print')
-                        ->tooltip('Cetak SPBL')
-                        ->icon('heroicon-o-printer')
-                        ->url(fn ($record) => route('spbl.print', $record))
-                        ->openUrlInNewTab(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -338,19 +247,17 @@ class SpblResource extends Resource
 
     public static function getRelations(): array
     {
-         return [
-            
+        return [
+            //
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSpbls::route('/'),
-            'create' => Pages\CreateSpbl::route('/create'),
-            'edit' => Pages\EditSpbl::route('/{record}/edit'),
+            'index' => Pages\ListHpes::route('/'),
+            'create' => Pages\CreateHpe::route('/create'),
+            'edit' => Pages\EditHpe::route('/{record}/edit'),
         ];
     }
-
-
 }
