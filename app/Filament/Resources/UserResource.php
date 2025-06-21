@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\UserResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\UserResource\RelationManagers;
+use Filament\Forms\Components\FileUpload;
 
 class UserResource extends Resource
 {
@@ -64,11 +65,12 @@ class UserResource extends Resource
                     ->password()
                     ->required(fn ($livewire) => $livewire instanceof \App\Filament\Resources\UserResource\Pages\CreateUser) // wajib saat create
                     ->dehydrated(false), // tidak disimpan ke DB
-                Forms\Components\Select::make('role')
-                    ->options([
-                        'User' => 'User',
-                        'Admin' => 'Admin',
-                    ]),
+                FileUpload::make('image')
+                    ->image(),
+
+                Forms\Components\Select::make('roles')
+                    ->multiple()
+                    ->relationship('roles','name'),
                     
             ]);
     }

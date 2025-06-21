@@ -57,8 +57,12 @@ class AdminPanelProvider extends PanelProvider
                     ->label(fn () => 'Role: ' . auth()->user()->role) // Ganti `role` dengan kolom/relasi yang sesuai
                     ->icon('heroicon-o-user'),
             ])
+            
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->plugins([
+                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
             ]);
     }
 }
