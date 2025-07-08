@@ -43,8 +43,8 @@ class SpblResource extends Resource
 {
     protected static ?string $model = Spbl::class;
 
-    protected static ?string $navigationGroup = 'Pengadaan';
-
+    protected static ?string $navigationLabel = 'SPBL';
+    protected static ?string $navigationGroup = '3. Pengadaan';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form

@@ -22,8 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
         'image',
+        'signature_path',
     ];
 
     /**
@@ -47,5 +47,14 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    // Tambahkan method untuk handle role assignment
+    protected static function booted()
+    {
+        static::created(function ($user) {
+            if (!$user->roles()->exists()) {
+                $user->assignRole('User'); // Role default
+            }
+        });
     }
 }

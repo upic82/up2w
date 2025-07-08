@@ -11,6 +11,7 @@ class Hpe extends Model
 
     protected $fillable = [
         'no_hpe',
+        'jenis', // ✅ tambahkan ini
         'nama_hpe',
         'no_dkmj',
         'tanggal_hpe',

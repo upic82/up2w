@@ -22,7 +22,12 @@ class PenugasanResource extends Resource
 {
     protected static ?string $model = Penugasan::class;
 
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationGroup = '2. Perencanaan';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationLabel = 'Penugasan';
+    
+    
 
     public static function form(Form $form): Form
     {
@@ -115,7 +120,7 @@ class PenugasanResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->tooltip(fn ($record) => $record->customer->nama_customer), // Menampilkan alias saat hover
-                TextColumn::make('status_progress')
+                TextColumn::make('status_penugasan')
                     ->badge()
                     ->label('Status')
                     ->sortable()
@@ -146,7 +151,7 @@ class PenugasanResource extends Resource
             ])
             ->defaultSort('batas_waktu_penugasan', 'asc') // Default sorting
             ->filters([
-                SelectFilter::make('status_progress')
+                SelectFilter::make('status_penugasan')
                     ->label('Status Progress')
                     ->options([
                         'Not Started' => 'Not Started',

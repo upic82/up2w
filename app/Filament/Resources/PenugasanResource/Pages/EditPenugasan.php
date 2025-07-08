@@ -14,6 +14,7 @@ class EditPenugasan extends EditRecord
     {
         return [
             Actions\DeleteAction::make(),
+            
         ];
     }
 }

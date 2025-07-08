@@ -24,9 +24,10 @@ class UserResource extends Resource
     protected static ?string $navigationGroup = 'User Management';
     protected static ?int $navigationSort = 1;
 
+    
     public static function canViewAny(): bool
     {
-        return Auth::user() && Auth::user()->role === 'Admin';
+        return Auth::user() && Auth::user()->hasRole('Admin');
     }
 
     public static function form(Form $form): Form
@@ -68,9 +69,17 @@ class UserResource extends Resource
                 FileUpload::make('image')
                     ->image(),
 
+                FileUpload::make('signature_path')
+                    ->label('Tanda Tangan')
+                    ->directory('signatures') // akan tersimpan di public/signatures
+                    ->image()
+                    ->visibility('public'),
+
                 Forms\Components\Select::make('roles')
-                    ->multiple()
-                    ->relationship('roles','name'),
+                ->multiple()
+                ->relationship('roles', 'name')
+                ->preload()
+                ->required(),
                     
             ]);
     }
@@ -82,13 +91,14 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('id')->sortable(),
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('email')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('role')
-                    ->sortable()
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'User' => 'warning',
-                        'Admin' => 'success',
-                    }),
+                Tables\Columns\TextColumn::make('roles.name')
+                ->badge()
+                ->color(fn (string $state): string => match ($state) {
+                    'User' => 'warning',
+                    'Admin' => 'success',
+                    default => 'gray',
+                })
+                ->label('Role'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
             ])
             ->filters([

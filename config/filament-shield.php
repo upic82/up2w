@@ -46,6 +46,10 @@ return [
             'delete_any',
             'force_delete',
             'force_delete_any',
+            'submit',
+            'approve_level_1', // Team Leader
+            'approve_level_2', // Assistant Manager
+            'approve_level_3', // Manager (final)
         ],
 
         'page' => 'page',
@@ -53,7 +57,10 @@ return [
     ],
 
     'entities' => [
-        'pages' => true,
+        //'pages' => true,
+        'pages' => [
+            \App\Filament\Pages\ImportPenugasan::class,
+        ],
         'widgets' => true,
         'resources' => true,
         'custom_permissions' => false,

@@ -24,7 +24,12 @@ class Dkmj extends Model
         'kota_unit',
         'no_wbs',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'approval_status',
+        'approved_by_tl',
+        'approved_by_am',
+        'approved_by_manager',
+        'rejected_by'
     ];
 
     /**
@@ -36,6 +41,7 @@ class Dkmj extends Model
         parent::boot();
 
         static::creating(function ($model) {
+            //dd($model); // atau dump($model)
             // Pastikan no_amp terisi
             if (empty($model->no_amp)) {
                 throw new \Exception('No AMP harus diisi sebelum membuat DKJM');
@@ -78,6 +84,23 @@ class Dkmj extends Model
     {
         return $this->hasMany(Spbl::class,'no_dkmj');
     }
+
+    // Relasi ke approver
+    public function teamLeaderApprover()
+    {
+        return $this->belongsTo(User::class, 'approved_by_tl');
+    }
+
+    public function assistantManagerApprover()
+    {
+        return $this->belongsTo(User::class, 'approved_by_am');
+    }
+
+    public function managerApprover()
+    {
+        return $this->belongsTo(User::class, 'approved_by_manager');
+    }
+
     // app/Models/Dkmj.php
     public function calculateRemainingQty($materialId)
     {

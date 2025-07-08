@@ -28,7 +28,10 @@ class WorkOrderResource extends Resource
     protected static ?string $model = WorkOrder::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
+    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationLabel = 'Work Order';
+    protected static ?string $navigationGroup = '2. Perencanaan';
+    
     public static function form(Form $form): Form
     {
         return $form

@@ -29,7 +29,8 @@ class HpeResource extends Resource
 {
     protected static ?string $model = Hpe::class;
 
-    protected static ?string $navigationGroup = 'Pengadaan';
+    protected static ?string $navigationLabel = 'HPE / RAB';
+    protected static ?string $navigationGroup = '3. Pengadaan';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
@@ -93,6 +94,14 @@ class HpeResource extends Resource
                             ->dehydrated() // WAJIB ada untuk memastikan nilai terkirim
                             ->unique(table: Hpe::class, column: 'no_hpe', ignoreRecord: true),
                             
+                        Select::make('jenis')
+                            ->label('Jenis Dokumen')
+                            ->options([
+                                'HPE' => 'HPE',
+                                'RAB' => 'RAB',
+                            ])
+                            ->required(),
+
                         Forms\Components\DatePicker::make('tanggal_hpe')
                             ->label('Tanggal HPE')
                             ->default(now())
@@ -220,17 +229,31 @@ class HpeResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('no_hpe')
-                    ->searchable(),
+                    ->searchable()
+                    ->tooltip(fn ($record) => $record->dkmj?->penugasan?->nama_penugasan ?? '-'),
                 
-                TextColumn::make('dkmj.penugasan.nama_penugasan')
+                TextColumn::make('nama_hpe')
+                    ->label('Nama HPE')
+                    ->tooltip(fn ($record) => $record->dkmj?->penugasan?->nama_penugasan ?? '-')
                     ->searchable(),
+                TextColumn::make('jenis')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'HPE' => 'warning',
+                        'RAB' => 'success',
+                       
+                    }),
                 TextColumn::make('grand_total')
                     ->label('Nilai')
                     
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
-                    ->sortable(),
-                TextColumn::make('no_dkmj')
+                    ->sortable()
+                    ->tooltip(fn ($record) => $record->dkmj?->penugasan?->nama_penugasan ?? '-'),
+                TextColumn::make('dkmj.no_dkmj')
+                    ->tooltip(fn ($record) => $record->dkmj?->penugasan?->nama_penugasan ?? '-')
+                    ->searchable(),
+
             ])
             ->filters([
                 //

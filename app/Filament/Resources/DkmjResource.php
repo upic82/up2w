@@ -18,6 +18,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
 use Filament\Forms\Components\TextInput;
+use Filament\Tables\Columns\BadgeColumn;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\RichEditor;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,11 +32,15 @@ use Filament\Forms\Components\Actions\Action; // Import class Action
 class DkmjResource extends Resource
 {
     protected static ?string $model = Dkmj::class;
-
+    protected static ?int $navigationSort = 3;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationLabel = 'DKMJ';
+    protected static ?string $navigationGroup = '2. Perencanaan';
 
     public static function form(Form $form): Form
     {
+        // Cek role saat form dipanggil
+        //dd(auth()->user()->getRoleNames());
         return $form
             ->schema([
                 Section::make()
@@ -51,6 +56,7 @@ class DkmjResource extends Resource
                                             ->pluck('nama_penugasan', 'id');
                                     })
                                     ->required()
+                                    //->dehydrated(true)
                                     //->unique(ignoreRecord: true)  // <-- Ini validasi untuk mencegah duplikat
                                     ->live() // Auto-update saat dipilih
                                     ->afterStateUpdated(function ($state, Set $set) {
@@ -64,7 +70,7 @@ class DkmjResource extends Resource
                                                     : '-'
                                             );
                                         
-                                        $set('amp_id', $penugasan->no_amp);
+                                        $set('no_amp_display', $penugasan->no_amp);
                                         $set('tanggal_penugasan', $penugasan->tanggal_penugasan);
                                         $set('batas_waktu', $penugasan->batas_waktu_penugasan);
                                         $set('nomor_wbs', $penugasan->no_wbs);
@@ -79,7 +85,7 @@ class DkmjResource extends Resource
                                                         ? 'Rp ' . number_format($penugasan->nilai_penugasan, 0, ',', '.')
                                                         : '-'
                                                 );
-                                                $set('amp_id', $penugasan->no_amp);
+                                                $set('no_amp_display', $penugasan->no_amp);
                                                 $set('tanggal_penugasan', $penugasan->tanggal_penugasan);
                                                 $set('batas_waktu', $penugasan->batas_waktu_penugasan);
                                                 $set('no_wbs', $penugasan->no_wbs);
@@ -92,36 +98,36 @@ class DkmjResource extends Resource
                                     Section::make()
                                         ->Schema([
                                             // Informasi yang akan terisi otomatis
-                                            Placeholder::make('no_amp')
-                                            ->content(function ($state) {
-                                                $penugasan = Penugasan::find($state);
+                                            Placeholder::make('no_amp_display')
+                                            ->content(function ($state, \Filament\Forms\Get $get) {
+                                                $penugasan = \App\Models\Penugasan::find($get('no_amp'));
                                                 return $penugasan->no_amp ?? '-';
                                             })
                                             ->label('No. AMP'),
                                             Placeholder::make('no_wbs')
-                                            ->content(function ($state) {
-                                                $penugasan = Penugasan::find($state);
+                                            ->content(function ($state, \Filament\Forms\Get $get) {
+                                                $penugasan = Penugasan::find($get('no_amp'));
                                                 return $penugasan->no_wbs ?? '-';
                                             })
                                             ->label('No. WBS'),
                                             
                                             Placeholder::make('nilai_penugasan')
-                                            ->content(function ($state) {
-                                                $penugasan = Penugasan::find($state);
+                                            ->content(function ($state, \Filament\Forms\Get $get) {
+                                                $penugasan = Penugasan::find($get('no_amp'));
                                                 return $penugasan->nilai_penugasan ?? '-';
                                             })
                                             ->label('Nilai Penugasan'),
                                             
                                             Placeholder::make('tanggal_penugasan')
-                                            ->content(function ($state) {
-                                                $penugasan = Penugasan::find($state);
+                                            ->content(function ($state, \Filament\Forms\Get $get) {
+                                                $penugasan = Penugasan::find($get('no_amp'));
                                                 return $penugasan->tanggal_penugasan ?? '-';
                                             })
                                             ->label('Tanggal Penugasan'),
                                                 
                                             Placeholder::make('batas_waktu_penugasan')
-                                            ->content(function ($state) {
-                                                $penugasan = Penugasan::find($state);
+                                            ->content(function ($state, \Filament\Forms\Get $get) {
+                                                $penugasan = Penugasan::find($get('no_amp'));
                                                 return $penugasan->batas_waktu_penugasan ?? '-';
                                             })
                                             ->label('Batas Waktu Penugasan'),
@@ -192,14 +198,14 @@ class DkmjResource extends Resource
                     }),
                 TextColumn::make('tanggal_dkmj')
                     ->label('Tanggal'),
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'Draft' => 'gray',
-                        'Approved' => 'success',
-                        'Review' => 'danger',
-                        default => 'primary',
-                    }),
+                BadgeColumn::make('approval_status')
+                    ->colors([
+                        'warning' => 'draft',
+                        'warning' => 'pending_tl',
+                        'primary' => 'approved_tl',
+                        'warning' => 'pending_am',
+                        'success' => 'approved_final',
+                    ]),
                 ViewColumn::make('expand')
                     ->label('Daftar SPBL')
                     ->view('tables.columns.expandable-dkmj-spbl'),
@@ -211,7 +217,16 @@ class DkmjResource extends Resource
             ->actions([
                 \Filament\Tables\Actions\ActionGroup::make([
                     Tables\Actions\ViewAction::make(), // Tambahkan ini
-                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\EditAction::make()
+                    ->visible(function ($record) {
+                        return ($record->approval_status !== 'approved_final') &&
+    
+                        ($record->approval_status === 'pending_tl' && auth()->user()->can('approve_level_1_dkmj')) ||
+                        ($record->approval_status === 'approved_tl' && auth()->user()->can('approve_level_2_dkmj')) ||
+                        ($record->approval_status === 'approved_am' && auth()->user()->can('approve_level_3_dkmj'));
+
+                    }),
+
                     Tables\Actions\Action::make('view_dkmj')
                         ->label('Print')
                         ->tooltip('Cetak DKMJ')
@@ -224,14 +239,16 @@ class DkmjResource extends Resource
                         ->color('success')
                         ->url(fn (Dkmj $record): string => route('filament.admin.resources.spbls.create', [
                             'no_dkmj' => $record->id,
-                        ])),
+                        ]))
+                        ->visible(fn (Dkmj $record) => $record->approval_status === 'approved_final'),
                     Tables\Actions\Action::make('create_hpe')
                         ->label('Buat HPE/RAB')
                         ->icon('heroicon-o-document-plus')
                         ->color('warning')
                         ->url(fn (Dkmj $record): string => route('filament.admin.resources.hpes.create', [
                             'no_dkmj' => $record->id,
-                        ])),
+                        ]))
+                        ->visible(fn (Dkmj $record) => $record->approval_status === 'approved_final'),
                         
                 ])
                 ->label('Aksi')
@@ -288,5 +305,48 @@ class DkmjResource extends Resource
                             ->disabled()
                     ])
             ]);
+    }
+    protected function getHeaderActions(): array
+    {
+        
+        return [
+            // Submit untuk approval TL
+            Action::make('submit_tl')
+                ->action(function (Dkmj $record) {
+                    $record->update(['approval_status' => 'pending_tl']);
+                })
+                ->visible(fn (Dkmj $record) => 
+                    //$record->approval_status === 'draft' &&
+                    auth()->user()->hasRole('Drafter')
+                ),
+
+            // Approval TL
+            Action::make('approve_tl')
+                ->action(function (Dkmj $record) {
+                    $record->update([
+                        'approval_status' => 'approved_tl',
+                        'approved_by_tl' => auth()->id()
+                    ]);
+                })
+                ->visible(fn (Dkmj $record) => 
+                    $record->approval_status === 'pending_tl' &&
+                    auth()->user()->hasRole('Team Leader')
+                )
+                ->color('success'),
+
+            // Approval AM
+            Action::make('approve_am')
+                ->action(function (Dkmj $record) {
+                    $record->update([
+                        'approval_status' => 'approved_final',
+                        'approved_by_am' => auth()->id()
+                    ]);
+                })
+                ->visible(fn (Dkmj $record) => 
+                    $record->approval_status === 'approved_tl' &&
+                    auth()->user()->hasRole('assistant_manager')
+                )
+                ->color('primary'),
+        ];
     }
 }

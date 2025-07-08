@@ -41,7 +41,7 @@ class Penugasan extends Model
     }
     public function scopeActive($query)
     {
-        return $query->whereIn('status_progress', ['Not Started', 'On Progress']);
+        return $query->whereIn('status_penugasan', ['Not Started', 'On Progress']);
     }
     
     // app/Models/Penugasan.php

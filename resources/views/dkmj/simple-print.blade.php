@@ -1,3 +1,10 @@
+@if ($dkmj->approval_status === 'approved_final')
+    @php
+        $am = \App\Models\User::find($dkmj->approved_by_am);
+        $manager = \App\Models\User::find($dkmj->approved_by_manager);
+    @endphp
+@endif
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -114,18 +121,32 @@
     <table class="signature">
         <tr>
             <td class="text-center">
-                Menyetujui,<br><br><br><br>
-                <u>{{ $dkmj->menyetujui }}</u><br>
+                Menyetujui,<br><br>
+                @isset($manager)
+                    @if ($manager?->signature_path)
+                        <img src="{{ asset('storage/signatures/' . basename($manager->signature_path)) }}" height="60"><br>
+                    @else
+                        <br><br><br>
+                    @endif
+                @endisset
+                <u>{{ $dkmj->managerApprover?->name ?? '-' }}</u><br>
                 Manager
             </td>
             <td class="text-center">
-                {{ $dkmj->kota_unit }}, {{ $dkmj->tanggal_dkmj }}<br><br>
-                Disusun Oleh,<br><br><br><br>
-                <u>{{ $dkmj->disusun_oleh }}</u><br>
+                {{ $dkmj->kota_unit }}, {{ \Carbon\Carbon::parse($dkmj->tanggal_dkmj)->translatedFormat('d F Y') }}<br><br>
+                Disusun Oleh,<br><br>
+                @isset($am)
+                    @if ($am?->signature_path)
+                        <img src="{{ public_path($am->signature_path) }}" height="60"><br>
+                    @else
+                        <br><br><br>
+                    @endif
+                @endisset
+                <u>{{ $dkmj->assistantManagerApprover?->name ?? '-' }}</u><br>
                 Asman Produksi
             </td>
-            
         </tr>
-    </table>
+    </table>    
+
 </body>
 </html>
