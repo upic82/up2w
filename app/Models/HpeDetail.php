@@ -26,8 +26,10 @@ class HpeDetail extends Model
         return $this->belongsTo(Hpe::class, 'no_hpe');
     }
 
-    public function material(): BelongsTo
-    {
-        return $this->belongsTo(Material::class, 'no_material');
-    }
+
+    // app/Models/HpeDetail.php
+public function material()
+{
+    return $this->belongsTo(Material::class, 'no_material', 'id');
+}
 }

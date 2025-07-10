@@ -40,5 +40,8 @@ class Hpe extends Model
     {
         return $this->hasMany(HpeDetail::class, 'no_hpe');
     }
-
+    public function kontrak()
+    {
+        return $this->hasOne(Kontrak::class, 'no_hpe','no_hpe');
+    }
 }

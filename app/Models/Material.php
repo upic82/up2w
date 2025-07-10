@@ -26,9 +26,13 @@ class Material extends Model
     {
         return $this->hasMany(SpblDetail::class, 'no_material');
     }
+    
     public function hpeDetails()
     {
-        return $this->hasMany(HpeDetail::class, 'no_material');
+        return $this->hasMany(HpeDetail::class, 'no_material', 'id');
+        // Asumsi:
+        // - no_material adalah foreign key di tabel hpe_detail
+        // - id adalah primary key di tabel material
     }
     public function kontrakDetails()
     {

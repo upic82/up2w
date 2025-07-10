@@ -38,7 +38,7 @@ class Kontrak extends Model
     // Relasi ke HPE
     public function hpe(): BelongsTo
     {
-        return $this->belongsTo(Hpe::class, 'no_hpe');
+        return $this->belongsTo(Hpe::class, 'no_hpe','no_hpe');
     }
 
     // Relasi ke Vendor
@@ -46,6 +46,8 @@ class Kontrak extends Model
     {
         return $this->belongsTo(Vendor::class, 'id_vendor');
     }
+
+    //detail
     public function detail()
     {
         return $this->hasMany(KontrakDetail::class, 'no_kontrak');
