@@ -4,24 +4,26 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
+use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Forms\Form;
 use App\Models\Penugasan;
 use App\Models\WorkOrder;
 use Filament\Tables\Table;
+use Doctrine\DBAL\Schema\Schema;
 use Filament\Resources\Resource;
 use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\Select;
+use Illuminate\Support\Facades\Cache;
 use Filament\Forms\Components\Section;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\RichEditor;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Placeholder;
 use App\Filament\Resources\WorkOrderResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\WorkOrderResource\RelationManagers;
-use Doctrine\DBAL\Schema\Schema;
-use Filament\Forms\Components\RichEditor;
 
 class WorkOrderResource extends Resource
 {
@@ -58,26 +60,72 @@ class WorkOrderResource extends Resource
                                 $set('amp_id', $penugasan->no_amp);
                                 $set('tanggal_penugasan', $penugasan->tanggal_penugasan);
                                 $set('batas_waktu', $penugasan->batas_waktu_penugasan);
-                                $set('nomor_wbs', $penugasan->no_wbs);
+                                $set('nomorwbs', $penugasan->no_wbs);
                             })
                             ->searchable(['nama_penugasan', 'no_amp']),
                         Section::make()
                             ->Schema([
-                                // Informasi yang akan terisi otomatis
-                                TextInput::make('nomor_wbs')
-                                    ->label('Nomor WBS'),
-                                TextInput::make('amp_id')
-                                    ->label('AMP ID'),
-                                TextInput::make('nilai_penugasan')
-                                    ->label('Nilai Penugasan'),
-                                TextInput::make('tanggal_penugasan')
-                                    ->label('Tanggal Penugasan'),
-                                    
-                                TextInput::make('batas_waktu')
-                                    ->label('Batas Waktu'),
+                                Placeholder::make('nomorwbs_info')
+                                    ->label('Nomor WBS')
+                                    ->content(function (Get $get) {
+                                        $penugasanId = $get('no_amp');
+                                        if (!$penugasanId) return '-';
+                                        
+                                        // Untuk optimasi, bisa tambahkan caching
+                                        return Cache::remember("penugasan_{$penugasanId}_wbs", 60, function() use ($penugasanId) {
+                                            return Penugasan::find($penugasanId)?->no_wbs ?? '-';
+                                        });
+                                    }),
+                                Placeholder::make('nomoramp_info')
+                                    ->label('Nomor AMP')
+                                    ->content(function (Get $get) {
+                                        $penugasanId = $get('no_amp');
+                                        if (!$penugasanId) return '-';
+                                        
+                                        // Untuk optimasi, bisa tambahkan caching
+                                        return Cache::remember("penugasan_{$penugasanId}_amp", 60, function() use ($penugasanId) {
+                                            return Penugasan::find($penugasanId)?->no_amp ?? '-';
+                                        });
+                                    }),
+                                Placeholder::make('nilaipenugasan_info')
+                                    ->label('Nilai Penugasan')
+                                    ->content(function (Get $get) {
+                                        $penugasanId = $get('no_amp');
+                                        if (!$penugasanId) return '-';
+                                        
+                                        // Untuk optimasi, bisa tambahkan caching
+                                        return Cache::remember("penugasan_{$penugasanId}_nilai", 60, function() use ($penugasanId) {
+                                            
+                                            return number_format(Penugasan::find($penugasanId)?->nilai_penugasan ?? '0', 0, ',', '.');
+                                        });
+                                    }),
+                                Placeholder::make('tglpenugasan_info')
+                                    ->label('Nomor AMP')
+                                    ->content(function (Get $get) {
+                                        $penugasanId = $get('no_amp');
+                                        if (!$penugasanId) return '-';
+                                        
+                                        // Untuk optimasi, bisa tambahkan caching
+                                        return Cache::remember("penugasan_{$penugasanId}_tglawal", 60, function() use ($penugasanId) {
+                                            return Penugasan::find($penugasanId)?->tanggal_penugasan ?? '-';
+                                        });
+                                    }),
+                                Placeholder::make('bataswaktu_info')
+                                    ->label('Batas Waktu')
+                                    ->content(function (Get $get) {
+                                        $penugasanId = $get('no_amp');
+                                        if (!$penugasanId) return '-';
+                                        
+                                        // Untuk optimasi, bisa tambahkan caching
+                                        return Cache::remember("penugasan_{$penugasanId}_batasan", 60, function() use ($penugasanId) {
+                                            return Penugasan::find($penugasanId)?->batas_waktu_penugasan ?? '-';
+                                        });
+                                    }),
+                
+                                
                         
                             ])
-                            ->columns(3)
+                            ->columns(5)
                 
                     ]),
                 Section::make('Working Item')

@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class DkmjDetail extends Model
 {
+    use LogsActivity;
     protected $table = 'dkmj_detail'; // Tetap gunakan nama tabel yang ada
     protected $fillable = [
         'ID',

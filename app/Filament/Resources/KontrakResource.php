@@ -60,39 +60,24 @@ class KontrakResource extends Resource
                         ->relationship(
                             name: 'hpe',
                             titleAttribute: 'no_hpe',
-                            modifyQueryUsing: fn (Builder $query) => $query->whereDoesntHave('kontrak')
+                            modifyQueryUsing: fn (Builder $query) => $query->belumTerpakai()
                         )
                         ->required()
                         ->live()
                         ->afterStateUpdated(function ($state, Set $set) {
                             $hpe = Hpe::find($state);
-                            $set('nilai_hpe', $hpe?->nilai_hpe ?? 0);
+                            //dd($hpe);
+                            $set('nilai_hpe', $hpe?->grand_total ?? 0);
                             $set('judul_kontrak', $hpe?->nama_hpe ?? '');
+                            
                         })
                         ->searchable()
                         ->preload()
                         ->visible(fn (string $operation) => $operation === 'create'),
             
                         Forms\Components\Hidden::make('no_hpe')
-                            ->visible(fn (string $operation) => $operation === 'edit'),
-                            
-                        Placeholder::make('nilai_hpe_placeholder')
-                            ->label('Nilai HPE')
-                            ->content(function ($record) {
-                                // Jika ada record dan relasi hpe terload
-                                if ($record && $record->hpe) {
-                                    return $record->hpe->grand_total;
-                                }
-                                
-                                // Jika relasi belum terload, load secara manual
-                                if ($record && $record->no_hpe) {
-                                    $hpe = \App\Models\Hpe::find($record->no_hpe);
-                                    return $hpe ? $hpe->grand_total : '-';
-                                }
-                                
-                                return '-';
-                            }),
-                        Hidden::make('nilai_hpe'),
+                            ->visible(fn (string $operation) => $operation === 'edit'),                        
+                        TextInput::make('nilai_hpe')->readOnly(),
                     ])
                     ->columns(3),
                 

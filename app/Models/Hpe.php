@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Hpe extends Model
 {
+    use LogsActivity;
     protected $table = 'hpe';
 
     protected $fillable = [
@@ -42,6 +44,10 @@ class Hpe extends Model
     }
     public function kontrak()
     {
-        return $this->hasOne(Kontrak::class, 'no_hpe','no_hpe');
+        return $this->hasOne(Kontrak::class, 'no_hpe','id');
+    }
+    public function scopeBelumTerpakai($query)
+    {
+        return $query->whereDoesntHave('kontrak');
     }
 }

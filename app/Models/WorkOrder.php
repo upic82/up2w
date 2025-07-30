@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class WorkOrder extends Model
 {
+    use LogsActivity;
     use HasFactory;
 
     protected $table = 'work_orders';

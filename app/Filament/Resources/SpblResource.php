@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use id;
+use App\Models\Hpe;
 use Filament\Forms;
 use App\Models\Dkmj;
 use App\Models\Spbl;
@@ -13,9 +14,10 @@ use App\Models\Material;
 use Filament\Forms\Form;
 use App\Models\DkmjDetail;
 use Filament\Tables\Table;
-use Filament\Support\RawJs;
 //use App\Filament\Resources\DkmjResource\Pages\Dkmj;
+use Filament\Support\RawJs;
 use Illuminate\Support\Str;
+
 use Illuminate\Support\Number;
 use Filament\Resources\Resource;
 use Illuminate\Support\Facades\DB;
@@ -96,6 +98,72 @@ class SpblResource extends Resource
                                     : (\App\Models\Dkmj::find(request()->no_dkmj)?->nilai_penugasan 
                                         ?? \App\Models\Dkmj::find(request()->no_dkmj)?->penugasan?->nilai_penugasan)
                             ),
+                         // Tombol Actual Pengadaan
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('actual_pengadaan')
+                            ->label('Actual Pengadaan')
+                            ->button()
+                            ->color('info')
+                            ->modalHeading('Daftar Actual Pengadaan')
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(false)
+                            ->modalContent(function (Get $get) {
+                                $noDkmj = $get('no_dkmj');
+                                if (!$noDkmj) {
+                                    return view('filament.components.no-dkmj-selected');
+                                }
+                                
+                                $dkmj = Dkmj::with(['penugasan', 'details.material', 'spbls.details', 'hpes.details'])->find($noDkmj);
+                                if (!$dkmj || !$dkmj->penugasan) {
+                                    return view('filament.components.no-penugasan-found');
+                                }
+
+                                // Hitung total qty per material dari SPBL dan HPE
+                                $materialUsage = [];
+                                
+                                // Proses SPBL
+                                foreach ($dkmj->spbls as $spbl) {
+                                    foreach ($spbl->details as $detail) {
+                                        $materialId = $detail->no_material;
+                                        $materialUsage[$materialId]['spbl_qty'] = ($materialUsage[$materialId]['spbl_qty'] ?? 0) + $detail->qty;
+                                    }
+                                }
+                                
+                                // Proses HPE
+                                foreach ($dkmj->hpes as $hpe) {
+                                    foreach ($hpe->details as $detail) {
+                                        $materialId = $detail->no_material;
+                                        $materialUsage[$materialId]['hpe_qty'] = ($materialUsage[$materialId]['hpe_qty'] ?? 0) + $detail->qty;
+                                    }
+                                }
+
+                                
+                                // Siapkan data untuk view
+                                $materialDetails = [];
+                                foreach ($dkmj->details as $dkmjDetail) {
+                                    $materialId = $dkmjDetail->no_material;
+                                    $material = $dkmjDetail->material; // Ambil relasi material
+                                    
+                                    $materialDetails[] = [
+                                        'nama_material' => Material::find($materialId)?->nama_material  ?? 'Material tidak ditemukan',
+                                        'satuan' => Material::find($materialId)?->satuan ?? '-',
+                                        'qty_dkmj' => $dkmjDetail->qty,
+                                        'qty_spbl' => $materialUsage[$materialId]['spbl_qty'] ?? 0,
+                                        'qty_hpe' => $materialUsage[$materialId]['hpe_qty'] ?? 0,
+                                        'sisa' => $dkmjDetail->qty - (($materialUsage[$materialId]['spbl_qty'] ?? 0) + ($materialUsage[$materialId]['hpe_qty'] ?? 0))
+                                    ];
+                                }
+
+                                return view('filament.components.actual-pengadaan-modal', [
+                                    'spbls' => $dkmj->spbls,
+                                    'hpes' => $dkmj->hpes,
+                                    'material_details' => $materialDetails,
+                                    'totalSpbl' => $dkmj->spbls->sum('grand_total'),
+                                    'totalHpe' => $dkmj->hpes->sum('grand_total'),
+                                    'penugasan' => $dkmj->penugasan,
+                                ]);
+                            })
+                        ])->fullWidth(),
                     ])
                     ->columns(3),
                     
@@ -164,10 +232,57 @@ class SpblResource extends Resource
                                     ->reactive()
                                     ->live()
                                     ->required()
-                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                        $qty = (float) $get('qty');
+                                    ->afterStateUpdated(function ($state, $set, $get, $context) { // Tambah parameter $context
+                                        // Hitung subtotal
+                                        $qty = (float) $state;
                                         $harga = (float) $get('harga');
                                         $set('subtotal', $qty * $harga);
+
+                                        // Validasi stok
+                                        $noDkmj = $get('../../no_dkmj');
+                                        $materialId = $get('no_material');
+                                        $currentSpblId = $context === 'edit' ? $get('../../id') : null; // Ambil ID SPBL yang sedang diedit
+                                        
+                                        if (!$noDkmj || !$materialId) return;
+
+                                        $dkmj = Dkmj::with(['details', 'spbls.details'])->find($noDkmj);
+                                        $dkmjDetail = $dkmj->details->firstWhere('no_material', $materialId);
+
+                                        if (!$dkmjDetail) {
+                                            Notification::make()
+                                                ->title('Material Tidak Ditemukan')
+                                                ->danger()
+                                                ->send();
+                                            $set('qty', 0);
+                                            return;
+                                        }
+
+                                        // Hitung total qty SPBL (kecuali yang sedang diedit)
+                                        $totalUsed = $dkmj->spbls
+                                            ->where('id', '!=', $currentSpblId) // Exclude current record
+                                            ->flatMap->details
+                                            ->where('no_material', $materialId)
+                                            ->sum('qty')
+                                            +
+                                            $dkmj->hpes
+                                            ->flatMap->details
+                                            ->where('no_material', $materialId)
+                                            ->sum('qty');
+                                            
+                                        $remainingQty = $dkmjDetail->qty - $totalUsed;
+
+                                        if ($qty > $remainingQty) {
+                                            Notification::make()
+                                                ->title('Stok Tidak Cukup')
+                                                ->body("Qty melebihi stok tersisa. Sisa: $remainingQty (Termasuk koreksi data ini)")
+                                                ->warning()
+                                                ->persistent()
+                                                ->duration(5000)
+                                                ->send();
+                                                
+                                            $set('qty', min($qty, $remainingQty));
+                                            $set('subtotal', min($qty, $remainingQty) * $harga);
+                                        }
                                     }),
                                 TextInput::make('satuan')
                                     ->label('Satuan')
@@ -205,9 +320,10 @@ class SpblResource extends Resource
                                         $set('subtotal', $qty * $harga);
                                     })
                             ])
-                            
+                                    
                             ->columnSpan('full')
                             ->live()
+                            ->dehydrated(true)
                             ->reactive()
                             ->afterStateUpdated(function (callable $set, $state) {
                                 // Hitung total semua item
@@ -220,8 +336,9 @@ class SpblResource extends Resource
                                 $set('nilai_ppn',$total * 0.11);
                                 
                                 $set('grand_total',$total * 1.11);
-                            }),
+                            })
                             
+
                         ]),
                         
                         TextInput::make('nilai_spbl')
@@ -235,45 +352,22 @@ class SpblResource extends Resource
                         TextInput::make('grand_total')
                             ->label('Grand Total')
                             ->readOnly()
-                            /*->formatStateUsing(function ($state, $get) {
-                                $qty = (float)($get('qty') ?? 0);
-                                $harga = (float)($get('harga') ?? 0);
-                                return Number::format($qty * $harga, 0);
-                            })
-
-                            //isi grand total waktu load edit
-                            ->afterStateHydrated(function (\Filament\Forms\Set $set, $state, $get) {
-                                // Ambil nilai dari dua field
-                                $nilaiSpbl = (float) $get('nilai_spbl') ?? 0;
-                                $nilaiPpn = (float) $get('nilai_ppn') ?? 0;
-
-                                $grandTotal = $nilaiSpbl + $nilaiPpn;
-
-                                // Format angka
-                                $formatted = number_format($grandTotal, 0, ',', '.');
-
-                                // Set state grand_total
-                                //$set('grand_total', $formatted);
-                                 //$set('nilai_spbl', number_format($nilaiSpbl, 0, ',', '.'));
-                                  //$set('nilai_ppn', number_format($nilaiPpn, 0, ',', '.'));
-                            })
-                            /*->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
-                                $formatted = number_format((float) str_replace(['.', ','], '', $state), 0, ',', '.');
-                                $set('grand_total', $formatted);
-                            })
-
-                            ->afterStateUpdated(function ($state, $set, $get) {
-                                $nilaiHpe = (float)$get('nilai_spbl');
-                                $nilaiPpn = (float)$get('nilai_ppn');
-                                $set('grand_total', $nilaiHpe + $nilaiPpn);
-                            })*/
-                            //->hidden()
+                            
                             ->numeric(),
-                        
-                        
+                        TextInput::make('sisa_saldo_hidden')
+                           ->disabled()
+                            ->rules([
+                                'numeric',
+                                'min:0'
+                            ])
+                            ->validationMessages([
+                                'min' => 'Saldo penugasan tidak boleh minus. Silakan silahkan disesuaikan.',
+                                'numeric' => 'Nilai harus berupa angka'
+                            ])
+                        ,
                         Placeholder::make('sisa_saldo_penugasan')
                             ->label('Saldo Penugasan Tersisa')
-                            ->content(function ($record, $state, $get) {
+                            ->content(function ($record, $state, $get,$set) {
                                 $noDkmj = $get('no_dkmj');
 
                                 if (!$noDkmj) return '-';
@@ -283,19 +377,30 @@ class SpblResource extends Resource
 
                                 $penugasan = $dkmj->workOrder->penugasan;
 
-                                // Hitung total SPBL sebelumnya
-                                $totalSpbl = 0;
-                                foreach ($dkmj->workOrder->dkmj as $dk) {
-                                    $totalSpbl += $dk->spbls()->sum(DB::raw('nilai_spbl + nilai_ppn'));
-                                }
+                                // Hitung total SPBL sebelumnya (termasuk yang sedang diedit)
+                                $totalSpbl = Spbl::where('no_dkmj', $noDkmj)
+                                    ->when($record?->id, function($query) use ($record) {
+                                        $query->where('id', '!=', $record->id);
+                                    })
+                                    ->sum(DB::raw('nilai_spbl + nilai_ppn'));
 
-                                $saldo = $penugasan->nilai_penugasan - $totalSpbl;
+                                // [BARU] Hitung total HPE/RAB untuk penugasan ini
+                                $totalHpe = Hpe::whereHas('dkmj', function($query) use ($dkmj) {
+                                        $query->where('no_dkmj', $dkmj->no_dkmj);
+                                    })
+                                    ->sum(DB::raw('nilai_hpe + nilai_ppn'));
 
+                                // Hitung sisa saldo (termasuk HPE)
+                                $saldo = $penugasan->nilai_penugasan - ($totalSpbl + $totalHpe + (float) $get('grand_total'));
+                                // Simpan nilai ke hidden field
+                                $set('sisa_saldo_hidden', $saldo);
                                 return 'Rp ' . number_format($saldo, 0, ',', '.');
                             })
                             ->extraAttributes(['class' => 'text-right text-red-600 font-semibold'])
-                    ]);
-        }
+                            
+                        ]);
+            
+    }
 
     public static function table(Table $table): Table
     {
@@ -351,6 +456,23 @@ class SpblResource extends Resource
             'edit' => Pages\EditSpbl::route('/{record}/edit'),
         ];
     }
+    protected function calculateSaldo($get): float
+    {
+        $noDkmj = $get('no_dkmj');
+        if (!$noDkmj) return 0;
 
+        $dkmj = \App\Models\Dkmj::find($noDkmj);
+        if (!$dkmj || !$dkmj->workOrder || !$dkmj->workOrder->penugasan) return 0;
+
+        $penugasan = $dkmj->workOrder->penugasan;
+
+        $totalSpbl = Spbl::where('no_dkmj', $noDkmj)
+            ->sum(DB::raw('nilai_spbl + nilai_ppn'));
+
+        $totalHpe = Hpe::whereHas('dkmj', fn($q) => $q->where('no_dkmj', $dkmj->no_dkmj))
+            ->sum(DB::raw('nilai_hpe + nilai_ppn'));
+
+        return $penugasan->nilai_penugasan - ($totalSpbl + $totalHpe + (float) $get('grand_total'));
+    }
 
 }

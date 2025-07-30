@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Dkmj extends Model
 {
+    use LogsActivity;
     // Nama tabel di database (jika tidak plural otomatis)
     protected $table = 'dkmj';
 
@@ -100,7 +102,10 @@ class Dkmj extends Model
     {
         return $this->belongsTo(User::class, 'approved_by_manager');
     }
-
+    public function hpes()
+    {
+        return $this->hasMany(Hpe::class, 'no_dkmj');
+    }
     // app/Models/Dkmj.php
     public function calculateRemainingQty($materialId)
     {
