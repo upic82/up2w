@@ -30,9 +30,9 @@ class WorkOrderResource extends Resource
     protected static ?string $model = WorkOrder::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?int $navigationSort = 2;
     protected static ?string $navigationLabel = 'Work Order';
-    protected static ?string $navigationGroup = '2. Perencanaan';
+    protected static ?string $navigationGroup = 'Perencanaan';
+    protected static ?int $navigationSort = 5;
     
     public static function form(Form $form): Form
     {
@@ -164,6 +164,12 @@ class WorkOrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('view_workorder')
+                        ->label('Print')
+                        ->tooltip('Cetak Workorder')
+                        ->icon('heroicon-o-printer')
+                        ->url(fn ($record) => route('workorder.print', $record))
+                        ->openUrlInNewTab(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -25,6 +25,7 @@ use Filament\Forms\Components\Placeholder;
 use App\Filament\Resources\HpeResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\HpeResource\RelationManagers;
+use App\Models\Kontrak;
 use App\Models\Spbl;
 use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
 
@@ -33,7 +34,8 @@ class HpeResource extends Resource
     protected static ?string $model = Hpe::class;
 
     protected static ?string $navigationLabel = 'HPE / RAB';
-    protected static ?string $navigationGroup = '3. Pengadaan';
+    protected static ?string $navigationGroup = 'Pengadaan';
+    protected static ?int $navigationSort = 7;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
@@ -140,12 +142,37 @@ class HpeResource extends Resource
                                     ];
                                 }
 
+                                $penugasanId = $dkmj->penugasan->id;
+                                // Ambil total dari semua SPBL dan HPE milik penugasan ini
+                                $totalSpbl = Spbl::whereHas('dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->sum('grand_total');
+                                 $totalHpe = Hpe::whereHas('dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->sum('grand_total');
+                                 $totalKontrak = Kontrak::whereHas('hpe.dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->sum('grand_total');
+
+                                //ambil semua SPBL terkait penugasan yang sedang dipilih
+                                $spblList = Spbl::whereHas('dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->get();
+                                $hpeList = Hpe::whereHas('dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->get();
+                                $kontrakList = Kontrak::whereHas('hpe.dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->get();
+
                                 return view('filament.components.actual-pengadaan-modal', [
-                                    'spbls' => $dkmj->spbls,
-                                    'hpes' => $dkmj->hpes,
+                                    'spbls' => $spblList,
+                                    'hpes' => $hpeList,
+                                    'kontraks' =>$kontrakList,
                                     'material_details' => $materialDetails,
-                                    'totalSpbl' => $dkmj->spbls->sum('grand_total'),
-                                    'totalHpe' => $dkmj->hpes->sum('grand_total'),
+                                    'totalSpbl' => $totalSpbl,
+                                    'totalHpe' => $totalHpe,
+                                    'totalKontrak' => $totalKontrak,
                                     'penugasan' => $dkmj->penugasan,
                                 ]);
                             })

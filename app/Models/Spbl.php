@@ -15,6 +15,7 @@ class Spbl extends Model
         'no_spbl',
         'no_dkmj',
         'tanggal_spbl',
+        'tanggal_spbl_selesai',
         'nama_spbl',
         'nilai_spbl',
         'nilai_ppn',

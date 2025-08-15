@@ -145,6 +145,44 @@
     </div>
 
     <div class="bg-white rounded-lg shadow p-4">
+        <h3 class="font-bold text-lg mb-4">Daftar Kontrak ({{ $kontraks->count() }})</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. DKMJ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. HPE</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama HPE</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai Total</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($kontraks as $kontrak)
+                        <tr>
+                            <td class="px-4 py-2 whitespace-nowrap font-medium">{{ $kontrak->hpe->no_hpe ?? '-' }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap font-medium">{{ $kontrak->no_kontrak }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap font-medium">{{ $kontrak->judul_kontrak }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap font-medium text-right">Rp {{ number_format($kontrak->grand_total, 0, ',', '.') }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 text-center text-gray-500">Tidak ada data Kontrak</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                @if($hpes->isNotEmpty())
+                    <tfoot>
+                        <tr class="bg-gray-50 font-semibold">
+                            <td colspan="3" class="px-6 py-4 text-right">Total Kontrak:</td>
+                            <td class="px-6 py-4 text-right">Rp {{ number_format($totalKontrak, 0, ',', '.') }}</td>
+                        </tr>
+                    </tfoot>
+                @endif
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-4">
         <div class="grid grid-cols-3 gap-4">
             <div class="col-span-2">
                 <p class="font-semibold">Ringkasan Pengadaan</p>

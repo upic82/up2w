@@ -8,6 +8,7 @@ use Filament\Forms;
 use App\Models\Dkmj;
 use App\Models\Spbl;
 use Filament\Tables;
+use App\Models\Kontrak;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use App\Models\Material;
@@ -37,8 +38,8 @@ use Filament\Forms\Components\TextInput\Mask;
 use App\Filament\Resources\SpblResource\Pages;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
 use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
-
 
 
 class SpblResource extends Resource
@@ -46,7 +47,8 @@ class SpblResource extends Resource
     protected static ?string $model = Spbl::class;
 
     protected static ?string $navigationLabel = 'SPBL';
-    protected static ?string $navigationGroup = '3. Pengadaan';
+    protected static ?string $navigationGroup = 'Pengadaan';
+    protected static ?int $navigationSort = 9;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
@@ -153,13 +155,25 @@ class SpblResource extends Resource
                                         'sisa' => $dkmjDetail->qty - (($materialUsage[$materialId]['spbl_qty'] ?? 0) + ($materialUsage[$materialId]['hpe_qty'] ?? 0))
                                     ];
                                 }
-
+                                $penugasanId = $dkmj->penugasan->id;
+                                
+                                // Ambil total dari semua SPBL dan HPE milik penugasan ini
+                                $totalSpbl = Spbl::whereHas('dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->sum('grand_total');
+                                 $totalHpe = Hpe::whereHas('dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->sum('grand_total');
+                                $kontrakList = Kontrak::whereHas('hpe.dkmj.workOrder', function ($query) use ($penugasanId) {
+                                    $query->where('no_amp', $penugasanId);
+                                })->get();
                                 return view('filament.components.actual-pengadaan-modal', [
                                     'spbls' => $dkmj->spbls,
                                     'hpes' => $dkmj->hpes,
+                                    'kontraks' =>$kontrakList,
                                     'material_details' => $materialDetails,
-                                    'totalSpbl' => $dkmj->spbls->sum('grand_total'),
-                                    'totalHpe' => $dkmj->hpes->sum('grand_total'),
+                                    'totalSpbl' => $totalSpbl,
+                                    'totalHpe' => $totalHpe,
                                     'penugasan' => $dkmj->penugasan,
                                 ]);
                             })
@@ -178,6 +192,10 @@ class SpblResource extends Resource
                             
                         Forms\Components\DatePicker::make('tanggal_spbl')
                             ->label('Tanggal SPBL')
+                            ->default(now())
+                            ->required(),
+                        Forms\Components\DatePicker::make('tanggal_spbl_selesai')
+                            ->label('Tanggal SPBL Selesai')
                             ->default(now())
                             ->required(),
                         Forms\Components\TextInput::make('nama_spbl')
@@ -409,18 +427,24 @@ class SpblResource extends Resource
                 TextColumn::make('no_spbl')
                     ->searchable(),
                 TextColumn::make('nama_spbl')
-                    ->searchable(),
-                TextColumn::make('dkmj.penugasan.nama_penugasan')
-                    ->searchable(),
+                    ->searchable()
+                    ->description(fn ($record) => $record->vendor->nama_vendor .' | '.\Carbon\Carbon::parse($record->tanggal_spbl)->translatedFormat('d F Y') ?? '-')
+                    
+                    ->tooltip(fn ($record) => $record->dkmj->penugasan->nama_penugasan)
+                    ,
+                
                 TextColumn::make('grand_total')
                     ->label('Nilai')
-                  
+                    ->tooltip(fn ($record) => $record->vendor->nama_vendor)
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.'))
                     ->alignEnd()
                     ->sortable(),
-                TextColumn::make('no_dkmj')
+                TextColumn::make('dkmj.no_dkmj')
                     ->label('No DKMJ')
-                    ->alignCenter()
+                    ->alignCenter(),
+            ])
+            ->headerActions([
+                FilamentExportHeaderAction::make('export'),
             ])
             ->filters([
                 //

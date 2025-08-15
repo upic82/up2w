@@ -11,6 +11,10 @@ class Penugasan extends Model
     use LogsActivity;
     protected $table = 'penugasan';
     protected $foreignKey = 'id_customer';
+    protected $casts = [
+        'tanggal_penugasan' => 'date',
+        'batas_waktu' => 'date',
+    ];
     protected $fillable = [
         'no_amp',
         'nama_penugasan',

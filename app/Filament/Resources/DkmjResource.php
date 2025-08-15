@@ -32,10 +32,11 @@ use Filament\Forms\Components\Actions\Action; // Import class Action
 class DkmjResource extends Resource
 {
     protected static ?string $model = Dkmj::class;
-    protected static ?int $navigationSort = 3;
+
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'DKMJ';
-    protected static ?string $navigationGroup = '2. Perencanaan';
+    protected static ?string $navigationGroup = 'Perencanaan';
+    protected static ?int $navigationSort = 6;
 
     public static function form(Form $form): Form
     {

@@ -2,13 +2,13 @@
 
 namespace App\Filament\Resources;
 
-use App\Models\Kontrak;
 use App\Models\Hpe;
-use App\Models\Material;
 use Filament\Forms;
+use Filament\Tables;
+use App\Models\Kontrak;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
-use Filament\Tables;
+use App\Models\Material;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
@@ -17,8 +17,10 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\TextInput\Mask;
 use App\Filament\Resources\KontrakResource\Pages;
 use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
 
@@ -27,7 +29,8 @@ class KontrakResource extends Resource
     protected static ?string $model = Kontrak::class;
 
     protected static ?string $navigationLabel = 'Kontrak';
-    protected static ?string $navigationGroup = '3. Pengadaan';
+     protected static ?string $navigationGroup = 'Pengadaan';
+    protected static ?int $navigationSort = 8;
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
     public static function form(Form $form): Form
@@ -53,7 +56,9 @@ class KontrakResource extends Resource
                         
                         return '-';
                     })
-                    ->visible(fn (string $operation) => $operation === 'edit'),
+                    ->label('No HPE')
+                    ->visible(fn (string $operation) => $operation === 'edit')
+                    ,
                     
                     // Tampilkan select hanya saat create
                     Forms\Components\Select::make('no_hpe')
@@ -75,9 +80,18 @@ class KontrakResource extends Resource
                         ->preload()
                         ->visible(fn (string $operation) => $operation === 'create'),
             
-                        Forms\Components\Hidden::make('no_hpe')
-                            ->visible(fn (string $operation) => $operation === 'edit'),                        
-                        TextInput::make('nilai_hpe')->readOnly(),
+                        /*Forms\Components\Hidden::make('no_hpe')
+                            ->visible(fn (string $operation) => $operation === 'edit')
+                            ->dehydrated(true), */                       
+                        Placeholder::make('nilai_hpe')
+    ->content(function ($state, \Filament\Forms\Get $get) {
+        $hpe = Hpe::find($get('no_hpe'));
+        return $hpe ? number_format($hpe->grand_total, 0, ',', '.') : '-';
+    })
+    ->label('Nilai HPE'),
+
+
+                        
                     ])
                     ->columns(3),
                 
@@ -124,14 +138,36 @@ class KontrakResource extends Resource
                         // Di KontrakResource.php
                         Select::make('jenis_kontrak')
                             ->options([
+                                'pj' => 'PJ',
+                                'spk' => 'SPK',
+                                'spbj' => 'SPBJ',
+                            ])
+                            ->default('pj') // Tambahkan ini
+                            ->required()
+                            ->disabled(fn (Get $get) => empty($get('no_hpe')))
+                            ->label('Jenis Kontrak'),
+                         Select::make('jenis_pengadaan')
+                            ->options([
                                 'barang' => 'Barang',
                                 'jasa' => 'Jasa',
-                                'konsultansi' => 'Konsultansi',
                             ])
                             ->default('barang') // Tambahkan ini
                             ->required()
                             ->disabled(fn (Get $get) => empty($get('no_hpe')))
-                            ->label('Jenis Kontrak'),
+                            ->label('Jenis Pengadaan'),
+
+                        Select::make('metode_pengadaan')
+                            ->options([
+                                'spbl' => 'SPBL',
+                                'penunjukan langsung' => 'Penunjukan Langsung',
+                                'lelang terbatas' => 'Lelang Terbatas',
+                                'lelang terbuka' => 'Lelang Terbuka',
+                                'khs' => 'KHS'
+                            ])
+                            ->default('spbl') // Tambahkan ini
+                            ->required()
+                            ->disabled(fn (Get $get) => empty($get('no_hpe')))
+                            ->label('Metode Pengadaan'),
                     ])
                     ->columns(3),
                 
@@ -209,7 +245,7 @@ class KontrakResource extends Resource
                                         $set('harga', $material?->harga_satuan ?? 0);
                                     }),
                                     
-                                TextInput::make('qty')
+                                /*TextInput::make('qty')
                                     ->numeric()
                                     ->required()
                                     ->live()
@@ -217,8 +253,67 @@ class KontrakResource extends Resource
                                     ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                         $set('subtotal', $state * $get('harga'));
                                         static::updateGrandTotal($set, $get);
-                                    }),
-                                    
+                                    }),*/
+                                TextInput::make('qty')
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->reactive()
+                                    ->live()
+                                    ->required()
+                                
+                                    ->afterStateUpdated(function ($state, $set, $get, $context) {
+                                        $qty = (float) $state;
+                                        $harga = (float) $get('harga');
+                                        $set('subtotal', $qty * $harga);
+
+                                        $noHpe = $get('../../no_hpe');
+                                        $materialId = $get('no_material');
+                                        $currentSpblId = $context === 'edit' ? $get('../../id') : null;
+                                        $currentDetailId = $get('id'); // ID detail yang sedang diedit
+                                        
+                                        if (!$noHpe || !$materialId) return;
+
+                                        $hpe = Hpe::with(['details', 'kontrak.detail'])->find($noHpe);
+                                        $HpeDetail = $hpe->details->firstWhere('no_material', $materialId);
+
+                                        if (!$HpeDetail) {
+                                            Notification::make()
+                                                ->title('Material Tidak Ditemukan')
+                                                ->danger()
+                                                ->send();
+                                            $set('qty', 0);
+                                            return;
+                                        }
+                                        $totalUsed = \App\Models\KontrakDetail::where('no_kontrak', $get('id') ?? null)
+                                            ->where('no_material', $materialId)
+                                            ->sum('qty');
+
+
+
+                                        // Hitung nilai awal sebelum edit (jika mode edit)
+                                        $originalQty = 0;
+                                        if ($context === 'edit' && $currentDetailId) {
+                                            $originalQty = \App\Models\KontrakDetail::find($currentDetailId)->qty;
+                                        }
+                                        
+                                        // Sisa stok = Stok DKMJ - (Total Terpakai - Nilai Awal + Nilai Baru)
+                                        $remainingQty = $HpeDetail->qty - ($totalUsed - $originalQty + $qty);
+
+                                        if ($remainingQty < 0) {
+                                            $maxAllowed = $HpeDetail->qty - ($totalUsed - $originalQty);
+                                            
+                                            Notification::make()
+                                                ->title('Stok Tidak Cukup')
+                                                ->body("Maksimal qty yang diizinkan: $maxAllowed")
+                                                ->warning()
+                                                ->duration(5000)
+                                                ->send();
+                                                
+                                            $set('qty', max(0, $maxAllowed));
+                                            $set('subtotal', max(0, $maxAllowed) * $harga);
+                                        }
+                                        
+                                    }),    
                                 TextInput::make('satuan')
                                     ->disabled()
                                     ->dehydrated(),
@@ -228,6 +323,7 @@ class KontrakResource extends Resource
                                     ->prefix('Rp')
                                     ->required()
                                     ->live()
+                                    
                                     ->disabled(fn (Get $get) => empty($get('../../no_hpe')))
                                     ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                         $set('subtotal', $get('qty') * $state);

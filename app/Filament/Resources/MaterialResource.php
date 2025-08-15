@@ -21,8 +21,8 @@ class MaterialResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Material/Jasa';
-    protected static ?string $navigationGroup = '1. Master Data';
-
+    protected static ?string $navigationGroup = 'Master Data';
+    protected static ?int $navigationSort = 2;
     
 
     public static function form(Form $form): Form

@@ -36,6 +36,10 @@ class ViewDkmj extends ViewRecord
                 ->action(function () {
                     $this->record->update(['approval_status' => 'approved_tl',
                         'approved_by_tl' => auth()->id()]);
+                    Notification::make()
+                        ->title('DKMJ berhasil disetujui')
+                        ->success()
+                        ->send();
                 })
                
                 ->label('Approve')
@@ -46,6 +50,10 @@ class ViewDkmj extends ViewRecord
                 ->action(function () {
                     $this->record->update(['approval_status' => 'approved_am',
                         'approved_by_am' => auth()->id()]);
+                    Notification::make()
+                        ->title('DKMJ berhasil disetujui')
+                        ->success()
+                        ->send();
                 })
                
                 ->label('Approve')
@@ -56,6 +64,10 @@ class ViewDkmj extends ViewRecord
                 ->action(function () {
                     $this->record->update(['approval_status' => 'approved_final',
                         'approved_by_manager' => auth()->id()]);
+                    Notification::make()
+                        ->title('DKMJ berhasil disetujui')
+                        ->success()
+                        ->send();
                 })
                
                 ->label('Approve')

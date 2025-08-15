@@ -20,11 +20,15 @@ class Kontrak extends Model
         'id_vendor',
         'nilai_kontrak',
         'nilai_ppn',
+        'grand_total',
         'no_gl',
+        'judul_kontrak',
         'no_pr',
         'no_po',
         'no_nota_dinas',
         'jenis_kontrak',
+        'jenis_pengadaan',
+        'metode_pengadaan',
         'status_kontrak',
         'created_by',
         'updated_by',
@@ -42,6 +46,8 @@ class Kontrak extends Model
     {
         return $this->belongsTo(Hpe::class, 'no_hpe');
     }
+
+    
 
     // Relasi ke Vendor
     public function vendor(): BelongsTo
